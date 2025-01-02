@@ -13,8 +13,10 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/node": "^22.10.2",
     "@types/sqlite3": "^3.1.11",
+    "lefthook": "^1.10.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   }

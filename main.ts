@@ -1,11 +1,20 @@
 import sqlite3 from "sqlite3";
 
+interface Task {
+  id: number;
+  description: string;
+  created_at: string;
+}
+
 let db: sqlite3.Database | null = null;
+
+const DB_FILE = "./tasks.db";
+const USAGE_MESSAGE = "使用方法: ts-node main.ts [add|list|delete] [タスク内容|タスクID]";
 
 async function initializeDb(): Promise<void> {
   if (!db) {
     db = await new Promise<sqlite3.Database>((resolve, reject) => {
-      const database = new sqlite3.Database("./tasks.db", (err) => {
+      const database = new sqlite3.Database(DB_FILE, (err) => {
         if (err) {
           console.error("データベース接続時にエラーが発生しました:", err);
           reject(err);
@@ -17,7 +26,11 @@ async function initializeDb(): Promise<void> {
     });
 
     await new Promise<void>((resolve, reject) => {
-      db!.run(
+      if (!db) {
+        reject(new Error("Database is not initialized"));
+        return;
+      }
+      db.run(
         `
                 CREATE TABLE IF NOT EXISTS tasks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +46,7 @@ async function initializeDb(): Promise<void> {
             console.log("テーブルを確認または作成しました。");
             resolve();
           }
-        }
+        },
       );
     });
   }
@@ -58,17 +71,15 @@ function listTasks() {
     console.error("データベースが初期化されていません！");
     return;
   }
-  db.all("SELECT id, description, created_at FROM tasks", [], (err, rows) => {
+  db.all("SELECT id, description, created_at FROM tasks", [], (err, rows: Task[]) => {
     if (err) {
       console.error("タスクの取得中にエラーが発生しました:", err);
     } else if (rows.length === 0) {
       console.log("タスクはありません。");
     } else {
-      rows.forEach((task: any) => {
-        console.log(
-          `${task.id}: ${task.description} (作成日時: ${task.created_at})`
-        );
-      });
+      for (const task of rows) {
+        console.log(`${task.id}: ${task.description} (作成日時: ${task.created_at})`);
+      }
     }
   });
 }
@@ -102,40 +113,42 @@ function closeDb() {
 }
 
 async function main() {
-  await initializeDb();
+  try {
+    await initializeDb();
 
-  const args = process.argv.slice(2);
-  const command = args[0];
+    const args = process.argv.slice(2);
+    const command = args[0];
 
-  if (!command) {
-    console.log(
-      "使用方法: ts-node main.ts [add|list|delete] [タスク内容|タスクID]"
-    );
+    if (!command) {
+      console.log(USAGE_MESSAGE);
+      closeDb();
+      return;
+    }
+
+    if (command === "add") {
+      const description = args.slice(1).join(" ");
+      if (!description) {
+        console.log("タスク内容を指定してください。");
+      } else {
+        addTask(description);
+      }
+    } else if (command === "list") {
+      listTasks();
+    } else if (command === "delete") {
+      const taskId = Number.parseInt(args[1], 10);
+      if (Number.isNaN(taskId)) {
+        console.log("削除するタスクIDを指定してください。");
+      } else {
+        deleteTask(taskId);
+      }
+    } else {
+      console.log("不明なコマンドです。");
+    }
+  } catch (error) {
+    console.error("エラーが発生しました:", error);
+  } finally {
     closeDb();
-    return;
   }
-
-  if (command === "add") {
-    const description = args.slice(1).join(" ");
-    if (!description) {
-      console.log("タスク内容を指定してください。");
-    } else {
-      addTask(description);
-    }
-  } else if (command === "list") {
-    listTasks();
-  } else if (command === "delete") {
-    const taskId = parseInt(args[1], 10);
-    if (isNaN(taskId)) {
-      console.log("削除するタスクIDを指定してください。");
-    } else {
-      deleteTask(taskId);
-    }
-  } else {
-    console.log("不明なコマンドです。");
-  }
-
-  closeDb();
 }
 
 main();
