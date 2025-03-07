@@ -1,10 +1,5 @@
 import sqlite3 from "sqlite3";
-
-interface Task {
-  id: number;
-  description: string;
-  created_at: string;
-}
+import type { Task } from "./types";
 
 let db: sqlite3.Database | null = null;
 
