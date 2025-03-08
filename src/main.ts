@@ -4,7 +4,7 @@ import type { Task } from "./types";
 let db: sqlite3.Database | null = null;
 
 const DB_FILE = "./tasks.db";
-const USAGE_MESSAGE = "使用方法: ts-node main.ts [add|list|delete] [タスク内容|タスクID]";
+const USAGE_MESSAGE = "使用方法: ts-node src/main.ts [add|list|delete] [タスク内容|タスクID]";
 
 async function initializeDb(): Promise<void> {
   if (!db) {
